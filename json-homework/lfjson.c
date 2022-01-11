@@ -4,6 +4,7 @@
 
 #define EXPECT(c, ch) do { assert(*c->json == (ch)); c->json++; } while(0)
 
+
 //跳过空白
 static void parse_ws(lf_context* ctx){
     const char* p = ctx->json;
@@ -12,14 +13,34 @@ static void parse_ws(lf_context* ctx){
     ctx->json = p;
 }
 
+static int after_check(lf_context* ctx,lfjson_node* node,int val)
+{
+    const char* p = ctx->json;
+    if(*p == '\0')
+    {
+        node->type = val;
+        return LF_PARSE_OK;
+    }
+
+    if(*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')
+    {
+        parse_ws(ctx);
+        if(*ctx->json != '\0')
+            return LF_PARSE_ROOT_NOT_SINGULAR;
+    }
+
+     return LF_PARSE_INVALID_VALUE;
+}
+
+
 //处理空值
 static int parse_null(lf_context* ctx,lfjson_node* node){
     EXPECT(ctx,'n');
     if(ctx->json[0] != 'u' || ctx->json[1] != 'l' || ctx->json[2] != 'l')
         return LF_PARSE_INVALID_VALUE;
     ctx->json += 3;
-    node->type = LFJSON_NULL;
-    return LF_PARSE_OK;
+
+    return after_check(ctx,node,LFJSON_NULL);
 }
 
 static int parse_false(lf_context* ctx,lfjson_node* node){
@@ -27,8 +48,8 @@ static int parse_false(lf_context* ctx,lfjson_node* node){
     if(ctx->json[0] != 'a' || ctx->json[1] != 'l' || ctx->json[2] != 's' || ctx->json[3] != 'e')
         return LF_PARSE_INVALID_VALUE;
     ctx->json += 4;
-    node->type = LFJSON_FALSE;
-    return LF_PARSE_OK;
+
+    return after_check(ctx,node,LFJSON_FALSE);
 }
 
 static int parse_true(lf_context* ctx,lfjson_node* node){
@@ -36,8 +57,8 @@ static int parse_true(lf_context* ctx,lfjson_node* node){
     if(ctx->json[0] != 'r' || ctx->json[1] != 'u' || ctx->json[2] != 'e')
         return LF_PARSE_INVALID_VALUE;
     ctx->json += 3;
-    node->type = LFJSON_TRUE;
-    return LF_PARSE_OK;
+
+    return after_check(ctx,node,LFJSON_TRUE);
 }
 
 
